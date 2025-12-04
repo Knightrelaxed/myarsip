@@ -71,20 +71,27 @@
         // =================================================================
         // --- CONFIG FIREBASE ---
         // =================================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
-            authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+        // 2. Logika Deteksi Lingkungan (AI Preview vs GitHub Pages)
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                // Environment AI Gemini (Jangan diubah)
+                const config = JSON.parse(__firebase_config);
+                app = initializeApp(config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                console.log("Menggunakan konfigurasi AI Environment");
+            } else {
+                // Environment GitHub Pages / Lokal (ISI BAGIAN INI)
+                const manualConfig = {
+                    apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+                    authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+                    projectId: "arsip-kuliah-c031c",
+                    storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
+                    messagingSenderId: "993355942952",
+                    appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
+                    measurementId: "G-1YG2T84XTE"
+                                    };
+        
             
-            // 👇👇👇 GANTI TULISAN DI BAWAH INI DENGAN LINK DARI FIREBASE CONSOLE 👇👇👇
-            databaseURL: "https://TEMPEL_LINK_REALTIME_DATABASE_DISINI.firebasedatabase.app", 
-            // 👆👆👆 Contoh: "https://arsip-kuliah-c031c-default-rtdb.asia-southeast1.firebasedatabase.app"
-            
-            projectId: "arsip-kuliah-c031c",
-            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
-            messagingSenderId: "993355942952",
-            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
-            measurementId: "G-1YG2T84XTE"
-        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
