@@ -1,131 +1,763 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arsip Kuliah Online + Gemini AI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5', secondary: '#10b981', surface: '#f8fafc' }, fontFamily: { sans: ['Inter','sans-serif'] }, animation: { 'pulse-fast': 'pulse 1.5s cubic-bezier(0.4,0,0.6,1) infinite' } } } }
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body{font-family:'Inter',sans-serif}
-    .fade-enter{animation:fadeIn .3s ease-out}
-    .slide-up{animation:slideUp .4s ease-out}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-    .quiz-scroll::-webkit-scrollbar{width:6px}
-    .quiz-scroll::-webkit-scrollbar-track{background:#f1f5f9}
-    .quiz-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsip Kuliah Online + Gemini AI</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#4f46e5', secondary: '#10b981', surface: '#f8fafc' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & Libraries -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+        "marked": "https://esm.sh/marked@12.0.0"
+      }
+    }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-enter { animation: fadeIn 0.3s ease-out; }
+        .slide-up { animation: slideUp 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar for Quiz */
+        .quiz-scroll::-webkit-scrollbar { width: 6px; }
+        .quiz-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .quiz-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
-  <div id="root"></div>
-  <script type="module">
-    import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
-    import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-    import * as Icons from 'https://esm.sh/lucide-react@0.263.1';
-    import { marked } from 'https://esm.sh/marked@12.0.0';
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
-    const h = React.createElement;
-    const DB_PATH = 'archives';
+    <div id="root"></div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
-      authDomain: "arsip-kuliah-c031c.firebaseapp.com",
-      databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/",
-      projectId: "arsip-kuliah-c031c",
-      storageBucket: "arsip-kuliah-c031c.appspot.com",
-      messagingSenderId: "993355942952",
-      appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
-    };
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            LayoutDashboard, FolderOpen, Calendar as CalendarIcon, 
+            Plus, Search, Filter, Trash2, Edit2, ExternalLink, 
+            X, CheckCircle2, Clock, FileText, Video, Link as LinkIcon,
+            TrendingUp, AlertCircle, Save, HardDrive, BrainCircuit, Sparkles, Settings
+        } from 'lucide-react';
+        import { marked } from 'marked';
+        
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+        // =================================================================
+        // --- CONFIG FIREBASE (DIPERBAIKI) ---
+        // =================================================================
+        <!-- === FIREBASE MODULE FIXED === -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getDatabase, ref, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-    const initAuth = async () => {
-      try {
-        if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) await signInWithCustomToken(auth, window.__initial_auth_token);
-        else await signInAnonymously(auth);
-      } catch (e) {
-        console.error(e);
-      }
-    };
+        // ⭐ FIX PALING PENTING — WAJIB ADA databaseURL
+const firebaseConfig = {
+    apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+    authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+    databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/", // FIX 🔥
+    projectId: "arsip-kuliah-c031c",
+    storageBucket: "arsip-kuliah-c031c.appspot.com",
+    messagingSenderId: "993355942952",
+    appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
+                        };
 
-    initAuth();
+        const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-    const LinkTypeIcon = ({ url, type }) => {
-      if (!url) return h(Icons.FileText, { size: 18, className: 'text-slate-500' });
-      if (url.includes('drive.google.com')) return h(Icons.HardDrive, { size: 18, className: 'text-blue-600' });
-      if (url.includes('youtube.com') || url.includes('youtu.be')) return h(Icons.Video, { size: 18, className: 'text-red-500' });
-      if (url.includes('zoom.us') || url.includes('meet.google')) return h(Icons.Video, { size: 18, className: 'text-blue-400' });
-      if (type === 'Tugas') return h(Icons.CheckCircle2, { size: 18, className: 'text-orange-500' });
-      return h(Icons.FileText, { size: 18, className: 'text-slate-500' });
-    };
 
-    const StatusBadge = ({ type, deadline }) => {
-      const isTask = type === 'Tugas' || type === 'Ujian';
-      if (!isTask) return h('span', { className: 'text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200' }, type);
-      if (!deadline) return h('span', { className: 'text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-100' }, type);
-      const daysLeft = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
-      let colorClass = 'bg-green-50 text-green-700 border-green-200';
-      let text = `${daysLeft} hari lagi`;
-      if (daysLeft < 0) { colorClass = 'bg-red-50 text-red-700 border-red-200'; text = 'Terlewat'; }
-      else if (daysLeft <= 3) { colorClass = 'bg-red-50 text-red-700 border-red-200'; }
-      else if (daysLeft <= 7) { colorClass = 'bg-yellow-50 text-yellow-700 border-yellow-200'; }
-      return h('div', { className: `flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${colorClass}` }, h(Icons.Clock, { size: 10 }), ' ', text);
-    };
+// === LOGIN ===
+onAuthStateChanged(auth, (user) => {
+if (!user) signInAnonymously(auth);
+});
 
-    const QuizModal = ({ quizData, onClose }) => {
-      const [answers, setAnswers] = useState({});
-      const [showResult, setShowResult] = useState(false);
-      const [score, setScore] = useState(0);
-      const handleSelect = (qIndex, optIndex) => { if (showResult) return; setAnswers(prev => ({ ...prev, [qIndex]: optIndex })); };
-      const handleSubmit = () => { let correct = 0; quizData.forEach((q, idx) => { if (answers[idx] === q.answer) correct++; }); setScore(correct); setShowResult(true); };
-      return h('div', { className: 'fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-enter' }, h('div', { className: 'bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]' }, h('div', { className: 'p-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50 rounded-t-2xl' }, h('h2', { className: 'font-bold text-indigo-900 flex items-center gap-2' }, h(Icons.BrainCircuit, { size: 20 }), ' Kuis Kilat AI'), h('button', { onClick: onClose }, h(Icons.X, { size: 20, className: 'text-indigo-400 hover:text-indigo-700' }))), h('div', { className: 'p-6 overflow-y-auto quiz-scroll space-y-8 flex-1' }, quizData.map((q, qIdx) => h('div', { key: qIdx, className: 'space-y-3' }, h('p', { className: 'font-semibold text-slate-800 text-lg' }, `${qIdx + 1}. ${q.question}`), h('div', { className: 'space-y-2 pl-4' }, q.options.map((opt, oIdx) => { let btnClass = 'w-full text-left p-3 rounded-xl border transition-all text-sm '; if (showResult) { if (oIdx === q.answer) btnClass += 'bg-green-100 border-green-500 text-green-800 font-bold '; else if (answers[qIdx] === oIdx) btnClass += 'bg-red-50 border-red-300 text-red-800 '; else btnClass += 'bg-slate-50 border-slate-100 opacity-50 '; } else { if (answers[qIdx] === oIdx) btnClass += 'bg-indigo-600 border-indigo-600 text-white shadow-md transform scale-[1.01] '; else btnClass += 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600 '; } return h('button', { key: oIdx, onClick: () => handleSelect(qIdx, oIdx), className: btnClass }, h('span', { className: 'inline-block w-6 font-bold' }, String.fromCharCode(65 + oIdx) + '.'), ' ', opt); })))) , h('div', { className: 'p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl' }, !showResult ? h('button', { onClick: handleSubmit, disabled: Object.keys(answers).length < quizData.length, className: 'w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all' }, 'Cek Hasil') : h('div', { className: 'text-center animate-bounce-in' }, h('p', { className: 'text-slate-500 text-sm mb-1' }, 'Skor Anda:'), h('p', { className: 'text-3xl font-black text-indigo-600' }, Math.round((score / quizData.length) * 100)), h('p', { className: 'text-xs text-slate-400 mt-2' }, `(${score} dari ${quizData.length} benar)`)))));
-    };
 
-    function App(){
-      const [archives, setArchives] = useState([]);
-      const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [activeTab, setActiveTab] = useState('archives');
-      const [showForm, setShowForm] = useState(false);
-      const [notification, setNotification] = useState(null);
-      const [deleteId, setDeleteId] = useState(null);
-      const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_api_key') || '');
-      const [showSettings, setShowSettings] = useState(false);
-      const [isGenerating, setIsGenerating] = useState(false);
-      const [quizData, setQuizData] = useState(null);
-      const [search, setSearch] = useState('');
-      const [filterType, setFilterType] = useState('All');
-      const initialForm = { id: null, title: '', link: '', category: '', semester: '1', type: 'Materi', deadline: '', description: '', tags: '' };
-      const [formData, setFormData] = useState(initialForm);
-      const SEMESTERS = [1,2,3,4,5,6,7,8];
-      const TYPES = ['Materi','Tugas','Ujian','Referensi'];
-      useEffect(()=>{ const unsub = onAuthStateChanged(auth, (u)=>{ setUser(u); }); return ()=>unsub && unsub(); },[]);
-      useEffect(()=>{ if(!user) return; const dbRef = ref(db, DB_PATH); const unsub = onValue(dbRef, (snapshot)=>{ const data = snapshot.val(); const loaded = []; if(data){ for(const k in data) loaded.push({ id:k, ...data[k] }); } loaded.sort((a,b)=>{ if(a.deadline && b.deadline) return new Date(a.deadline)-new Date(b.deadline); return (b.createdAt||0)-(a.createdAt||0); }); setArchives(loaded); setLoading(false); }, (err)=>{ console.error('DB Error', err); setLoading(false); }); return ()=>unsub && unsub(); },[user]);
-      const showNotify = (type,msg)=>{ setNotification({ type, message: msg }); setTimeout(()=>setNotification(null),3000); };
-      const callGemini = async (apiKey,prompt)=>{ if(!apiKey) throw new Error('API Key belum disetting'); const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const res = await fetch(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] }) }); if(!res.ok) throw new Error('Gagal menghubungi Gemini'); const data = await res.json(); return data.candidates[0].content.parts[0].text; };
-      const saveApiKey = (e)=>{ e.preventDefault(); localStorage.setItem('gemini_api_key', geminiKey); setShowSettings(false); showNotify('success','API Key tersimpan'); };
-      const handleAutoFill = async ()=>{ if(!formData.title) return showNotify('error','Isi judul materi dulu!'); if(!geminiKey) return setShowSettings(true); setIsGenerating(true); try{ const prompt = `Sebagai asisten mahasiswa, berikan output JSON (tanpa markdown block) untuk melengkapi data arsip kuliah berdasarkan Judul: "${formData.title}". Format JSON: { "category": "Nama Mata Kuliah yang relevan (singkat)", "description": "Ringkasan akademis 1-2 kalimat tentang topik ini", "tags": "tag1, tag2, tag3" }`; const result = await callGemini(geminiKey,prompt); const clean = result.replace(/```json|```/g,'').trim(); const parsed = JSON.parse(clean); setFormData(prev=>({ ...prev, category: parsed.category || prev.category, description: parsed.description || prev.description, tags: parsed.tags || prev.tags })); showNotify('success','Data terisi otomatis oleh AI!'); }catch(e){ console.error(e); showNotify('error','Gagal generate AI. Cek API Key.'); } finally{ setIsGenerating(false); } };
-      const handleGenerateQuiz = async (item)=>{ if(!geminiKey) return setShowSettings(true); const btn = document.getElementById(`btn-quiz-${item.id}`); const original = btn ? btn.innerText : 'Quiz'; if(btn) btn.innerText = 'Loading...'; try{ const prompt = `Buatlah 3 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description||''}".`; const result = await callGemini(geminiKey,prompt); const clean = result.replace(/```json|```/g,'').trim(); const quiz = JSON.parse(clean); if(Array.isArray(quiz) && quiz.length) setQuizData(quiz); else throw new Error('Format salah'); }catch(e){ console.error(e); showNotify('error','Gagal membuat kuis.'); } finally{ if(btn) btn.innerText = original; } };
-      const handleSubmit = async (e)=>{ e.preventDefault(); if(!user){ showNotify('error','Anda harus login (sedang memuat...)'); return; } try{ let url = formData.link; if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url; const normalizedDeadline = (formData.type === 'Tugas' || formData.type === 'Ujian') ? (formData.deadline || null) : null; const payload = { title: formData.title, link: url, category: formData.category, semester: formData.semester, type: formData.type, deadline: normalizedDeadline, description: formData.description || '', tags: typeof formData.tags === 'string' ? formData.tags.trim() : '', createdAt: serverTimestamp(), createdBy: user.uid }; Object.keys(payload).forEach(k=> payload[k]===undefined && delete payload[k]); if(formData.id) { await update(ref(db, `${DB_PATH}/${formData.id}`), payload); showNotify('success','Arsip diperbarui'); } else { await push(ref(db, DB_PATH), { ...payload, clickCount:0 }); showNotify('success','Arsip ditambahkan'); } setFormData(initialForm); setShowForm(false); }catch(e){ console.error('Save Error:', e); showNotify('error','Gagal menyimpan. Cek koneksi!'); } };
-      const executeDelete = async ()=>{ if(!deleteId) return; try{ await remove(ref(db, `${DB_PATH}/${deleteId}`)); showNotify('success','Item dihapus'); }catch(e){ showNotify('error','Gagal menghapus'); } setDeleteId(null); };
-      const openLink = (item)=>{ window.open(item.link, '_blank'); if(item.id) update(ref(db, `${DB_PATH}/${item.id}`), { clickCount: (item.clickCount||0)+1 }); };
-      const filteredData = useMemo(()=> archives.filter(item=>{ const q = search.toLowerCase(); const matchSearch = item.title.toLowerCase().includes(q) || item.category.toLowerCase().includes(q) || (item.tags && item.tags.toLowerCase().includes(q)); const matchType = filterType==='All' || item.type===filterType; return matchSearch && matchType; }), [archives, search, filterType]);
-      const stats = useMemo(()=> ({ total: archives.length, tasks: archives.filter(a=> a.type==='Tugas' || a.type==='Ujian').length, clicks: archives.reduce((a,b)=> a + (b.clickCount||0), 0) }), [archives]);
-      const SidebarLink = ({ id, icon: Icon, label })=> h('button', { onClick: ()=> setActiveTab(id), className: `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab===id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}` }, h(Icon, { size:18 }), ' ', label);
-      return h('div', { className: 'flex h-screen bg-slate-50 font-sans text-slate-800' }, notification && h('div', { className: `fixed top-4 right-4 z-[70] px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium text-white fade-enter ${notification.type==='success' ? 'bg-emerald-500' : 'bg-rose-500'}` }, notification.type==='success' ? h(Icons.CheckCircle2, { size:16 }) : h(Icons.AlertCircle, { size:16 }), notification.message), h('aside', { className: 'hidden md:flex flex-col w-64 bg-white border-r border-slate-200 p-6 z-20' }, h('div', { className: 'flex items-center gap-2 mb-8 px-2' }, h('div', { className: 'bg-indigo-600 p-1.5 rounded-lg text-white' }, h(Icons.FolderOpen, { size:20 })), h('div', null, h('span', { className: 'font-bold text-xl text-slate-800 block leading-none' }, 'StudyVault'), h('span', { className: 'text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1 rounded' }, '+ Gemini AI'))), h('nav', { className: 'flex-1 space-y-2' }, h(SidebarLink, { id: 'dashboard', icon: Icons.LayoutDashboard, label: 'Ringkasan' }), h(SidebarLink, { id: 'archives', icon: Icons.HardDrive, label: 'Arsip Materi' }), h(SidebarLink, { id: 'calendar', icon: Icons.Calendar, label: 'Jadwal Tugas' })), h('button', { onClick: ()=> setShowSettings(true), className: 'flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 text-sm font-medium' }, h(Icons.Settings, { size:18 }), ' API Settings')), h('div', { className: 'md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-40 pb-6' }, h('button', { onClick: ()=> setActiveTab('dashboard'), className: activeTab==='dashboard' ? 'text-indigo-600' : 'text-slate-400' }, h(Icons.LayoutDashboard, { size:24 })), h('button', { onClick: ()=> setActiveTab('archives'), className: activeTab==='archives' ? 'text-indigo-600' : 'text-slate-400' }, h(Icons.HardDrive, { size:24 })), h('button', { onClick: ()=> { setFormData(initialForm); setShowForm(true); }, className: 'bg-indigo-600 text-white p-2 rounded-full shadow-lg -mt-8 border-4 border-slate-50' }, h(Icons.Plus, { size:24 })), h('button', { onClick: ()=> setShowSettings(true), className: 'text-slate-400' }, h(Icons.Settings, { size:24 }))), h('main', { className: 'flex-1 overflow-y-auto relative scroll-smooth p-4 md:p-8 pb-24 md:pb-8' }, h('div', { className: 'md:hidden flex justify-between items-center mb-6' }, h('span', { className: 'font-bold text-lg text-indigo-900' }, 'StudyVault AI'), h('div', { className: 'bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold' }, stats.total, ' Files')), activeTab==='dashboard' && h('div', { className: 'max-w-5xl mx-auto space-y-6 fade-enter' }, h('h1', { className: 'text-2xl font-bold text-slate-900' }, 'Dashboard'), h('div', { className: 'grid grid-cols-2 md:grid-cols-3 gap-4' }, h('div', { className: 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm' }, h('div', { className: 'text-slate-400 mb-2' }, h(Icons.HardDrive, { size:20 })), h('div', { className: 'text-2xl font-bold text-slate-800' }, stats.total), h('div', { className: 'text-xs text-slate-500' }, 'Total Arsip')), h('div', { className: 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm' }, h('div', { className: 'text-orange-400 mb-2' }, h(Icons.CheckCircle2, { size:20 })), h('div', { className: 'text-2xl font-bold text-slate-800' }, stats.tasks), h('div', { className: 'text-xs text-slate-500' }, 'Tugas Aktif')), h('div', { className: 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm' }, h('div', { className: 'text-green-500 mb-2' }, h(Icons.TrendingUp, { size:20 })), h('div', { className: 'text-2xl font-bold text-slate-800' }, stats.clicks), h('div', { className: 'text-xs text-slate-500' }, 'Total Klik'))), h('div', { className: 'bg-gradient-to-r from-indigo-600 to-purple-600 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden' }, h('div', { className: 'relative z-10' }, h('h3', { className: 'font-bold text-lg mb-2 flex items-center gap-2' }, h(Icons.Sparkles, { size:20, className: 'text-yellow-300' }), ' Fitur AI Baru!'), h('p', { className: 'text-indigo-100 text-sm mb-4 max-w-lg' }, 'Gunakan Gemini untuk mengisi detail materi secara otomatis atau membuat soal latihan dari catatan kuliahmu.'), h('button', { onClick: ()=> { setFormData(initialForm); setShowForm(true); }, className: 'bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors' }, 'Coba Tambah Materi')), h(Icons.Sparkles, { size:100, className: 'absolute -right-4 -bottom-4 text-white opacity-10' })), activeTab==='archives' && h('div', { className: 'max-w-5xl mx-auto h-full flex flex-col fade-enter' }, h('div', { className: 'flex justify-between items-center mb-6' }, h('h1', { className: 'text-2xl font-bold text-slate-900' }, 'Arsip Materi'), h('button', { onClick: ()=> { setFormData(initialForm); setShowForm(true); }, className: 'hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium items-center gap-2 shadow-sm text-sm' }, h(Icons.Plus, { size:18 }), ' Tambah')), h('div', { className: 'bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-2 sticky top-0 z-10' }, h('div', { className: 'relative flex-1' }, h(Icons.Search, { size:18, className: 'absolute left-3 top-1/2 -translate-y-1/2 text-slate-400' }), h('input', { type: 'text', placeholder: 'Cari...', className: 'w-full pl-10 pr-4 py-2.5 bg-transparent text-sm focus:outline-none', value: search, onChange: e=> setSearch(e.target.value) })), h('div', { className: 'flex gap-2 overflow-x-auto pb-2 md:pb-0 px-2 hide-scrollbar' }, ['All', ...TYPES].map(type=> h('button', { key:type, onClick: ()=> setFilterType(type), className: `px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterType===type ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}` }, type)))), h('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20' }, loading ? h('div', { className: 'col-span-full text-center py-20 text-slate-400' }, 'Memuat database...') : filteredData.length===0 ? h('div', { className: 'col-span-full text-center py-20 text-slate-400' }, 'Data kosong.') : filteredData.map(item=> h('div', { key: item.id, className: 'group bg-white p-5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-lg transition-all relative flex flex-col h-full slide-up' }, h('div', { className: 'flex justify-between items-start mb-3' }, h('div', { className: 'p-2.5 bg-slate-50 rounded-xl group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors' }, h(LinkTypeIcon, { url: item.link, type: item.type })), h('div', { className: 'flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity' }, h('button', { onClick: ()=> { setFormData(item); setShowForm(true); }, className: 'p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600' }, h(Icons.Edit2, { size:14 })), h('button', { onClick: ()=> setDeleteId(item.id), className: 'p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-500' }, h(Icons.Trash2, { size:14 })) )), h('div', { className: 'mb-4 flex-1' }, h('div', { className: 'flex gap-2 mb-2 flex-wrap' }, h('span', { className: 'text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded' }, `S${item.semester}`), h(StatusBadge, { type: item.type, deadline: item.deadline })), h('h3', { className: 'font-bold text-slate-800 leading-snug mb-1 line-clamp-2' }, item.title), h('p', { className: 'text-xs text-slate-500 truncate mb-2' }, item.category), item.description && h('p', { className: 'text-xs text-slate-500 line-clamp-2 bg-slate-50 p-2 rounded border border-slate-100 italic' }, item.description), item.tags && h('div', { className: 'mt-2 flex flex-wrap gap-1' }, item.tags.split(',').slice(0,3).map((t,i)=> h('span', { key:i, className: 'text-[10px] bg-slate-100 px-1.5 rounded text-slate-500' }, `#${t.trim()}`)))), h('div', { className: 'flex gap-2' }, h('button', { onClick: ()=> openLink(item), className: 'flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1' }, 'Buka ', h(Icons.ExternalLink, { size:12 })), h('button', { id: `btn-quiz-${item.id}`, onClick: ()=> handleGenerateQuiz(item), className: 'flex-1 py-2 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1' }, h(Icons.BrainCircuit, { size:12 }), ' Quiz Saya'))))), showSettings && h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter' }, h('div', { className: 'bg-white w-full max-w-md rounded-2xl shadow-2xl p-6' }, h('h2', { className: 'font-bold text-lg text-slate-800 mb-4 flex items-center gap-2' }, h(Icons.Settings, { size:20 }), ' Pengaturan AI'), h('p', { className: 'text-sm text-slate-500 mb-4' }, 'Masukkan Gemini API Key untuk mengaktifkan fitur Auto-fill dan Quiz Generator.'), h('form', { onSubmit: saveApiKey }, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Gemini API Key'), h('input', { type:'password', required:true, className: 'w-full px-4 py-2 border rounded-xl mt-1 mb-4', value: geminiKey, onChange: e=> setGeminiKey(e.target.value), placeholder: 'AIzaSy...' }), h('div', { className: 'flex gap-3' }, h('button', { type: 'button', onClick: ()=> setShowSettings(false), className: 'flex-1 py-2 border rounded-xl' }, 'Batal'), h('button', { type: 'submit', className: 'flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold' }, 'Simpan'))), h('p', { className: 'text-xs text-slate-400 mt-4 text-center' }, 'Key disimpan di browser lokal (localStorage) Anda.')), showForm && h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter' }, h('div', { className: 'bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]' }, h('div', { className: 'p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50' }, h('h2', { className: 'font-bold text-slate-800' }, formData.id ? 'Edit' : 'Baru'), h('button', { onClick: ()=> setShowForm(false) }, h(Icons.X, { size:20 }))), h('form', { onSubmit: handleSubmit, className: 'p-6 overflow-y-auto space-y-4' }, h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Judul'), h('div', { className: 'flex gap-2' }, h('input', { required:true, className: 'w-full px-4 py-2 border rounded-xl', value: formData.title, onChange: e=> setFormData({ ...formData, title: e.target.value }), placeholder: 'Misal: Aljabar Linear' }), h('button', { type: 'button', onClick: handleAutoFill, disabled: isGenerating, className: 'bg-purple-100 text-purple-700 px-3 rounded-xl hover:bg-purple-200 transition-colors flex items-center gap-1 disabled:opacity-50', title: 'Isi otomatis deskripsi & tag dengan AI' }, isGenerating ? h('div', { className: 'animate-spin h-4 w-4 border-2 border-purple-600 rounded-full border-t-transparent' }) : h(Icons.Sparkles, { size:18 })))), h('div', { className: 'grid grid-cols-2 gap-4' }, h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Kategori'), h('input', { required:true, className: 'w-full px-4 py-2 border rounded-xl', value: formData.category, onChange: e=> setFormData({ ...formData, category: e.target.value }) })), h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Tipe'), h('select', { className: 'w-full px-4 py-2 border rounded-xl bg-white', value: formData.type, onChange: e=> setFormData({ ...formData, type: e.target.value }) }, TYPES.map(t=> h('option', { key: t, value: t }, t))))), h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Deskripsi (Opsional)'), h('textarea', { className: 'w-full px-4 py-2 border rounded-xl text-sm', rows:2, value: formData.description, onChange: e=> setFormData({ ...formData, description: e.target.value }), placeholder: 'Ringkasan materi...' })), h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Tags (Pisahkan koma)'), h('input', { className: 'w-full px-4 py-2 border rounded-xl', value: formData.tags, onChange: e=> setFormData({ ...formData, tags: e.target.value }), placeholder: 'math, wajib, semester1' })), (formData.type === 'Tugas' || formData.type === 'Ujian') && h('div', { className: 'bg-orange-50 p-3 rounded-xl border border-orange-100' }, h('label', { className: 'text-xs font-bold text-orange-700 uppercase' }, 'Deadline'), h('input', { type: 'date', className: 'w-full px-4 py-2 border rounded-lg bg-white mt-1', value: formData.deadline, onChange: e=> setFormData({ ...formData, deadline: e.target.value }) })), h('div', { className: 'grid grid-cols-2 gap-4' }, h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'Semester'), h('select', { className: 'w-full px-4 py-2 border rounded-xl bg-white', value: formData.semester, onChange: e=> setFormData({ ...formData, semester: e.target.value }) }, SEMESTERS.map(s=> h('option', { key: s, value: s }, `Semester ${s}`))))), h('div', null, h('label', { className: 'text-xs font-bold text-slate-500 uppercase' }, 'URL Link'), h('input', { required:true, className: 'w-full px-4 py-2 border rounded-xl', value: formData.link, onChange: e=> setFormData({ ...formData, link: e.target.value }), placeholder: 'https://' })), h('button', { type: 'submit', className: 'w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg mt-4' }, 'Simpan')))), quizData && h(QuizModal, { quizData: quizData, onClose: ()=> setQuizData(null) }), deleteId && h('div', { className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter' }, h('div', { className: 'bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center' }, h('div', { className: 'w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4' }, h(Icons.Trash2, { size:24 })), h('h3', { className: 'font-bold text-slate-800 mb-2' }, 'Hapus Item?'), h('div', { className: 'flex gap-3 mt-6' }, h('button', { onClick: ()=> setDeleteId(null), className: 'flex-1 py-2 border rounded-xl' }, 'Batal'), h('button', { onClick: executeDelete, className: 'flex-1 py-2 bg-red-600 text-white rounded-xl font-bold' }, 'Hapus')))));
-    }
+// === EXPORT TO WINDOW AGAR KODE BABEL BISA AKSES ===
+window._db = db;
+window._auth = auth;
+window._ref = ref;
+window._push = push;
+window._remove = remove;
+window._update = update;
+window._onValue = onValue;
+window._serverTimestamp = serverTimestamp;
+</script>
+    
+        let app, auth, db, appId;
+        const DB_PATH = 'archives'; 
 
-    const root = createRoot(document.getElementById('root'));
-    root.render(h(App));
-  </script>
+        // Konfigurasi Manual (Fallback)
+        const manualConfig = {
+            apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+            authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+            projectId: "arsip-kuliah-c031c",
+            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
+            messagingSenderId: "993355942952",
+            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
+            measurementId: "G-1YG2T84XTE"
+        };
+
+        try {
+            // Cek apakah berjalan di lingkungan AI Gemini dengan config terinjeksi
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                const config = JSON.parse(__firebase_config);
+                app = initializeApp(config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                console.log("Menggunakan konfigurasi AI Environment");
+            } else {
+                // Gunakan konfigurasi manual jika tidak ada config terinjeksi
+                app = initializeApp(manualConfig);
+                appId = manualConfig.appId;
+                console.log("Menggunakan konfigurasi Manual/Lokal");
+            }
+        } catch (error) {
+            console.error("Error inisialisasi Firebase:", error);
+            // Fallback terakhir jika terjadi error parsing
+            app = initializeApp(manualConfig);
+        }
+
+        // Inisialisasi service setelah app terbentuk
+        auth = getAuth(app);
+        db = getDatabase(app);
+
+        // Fungsi Helper Auth untuk menangani Token AI atau Anonymous
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Failed:", error);
+            }
+        };
+        
+        // Panggil auth saat script dimuat
+        initAuth();
+
+        // --- GEMINI API HELPER ---
+        const callGemini = async (apiKey, prompt) => {
+            if (!apiKey) throw new Error("API Key belum disetting");
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            
+            if (!response.ok) throw new Error("Gagal menghubungi Gemini");
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        };
+
+        // --- COMPONENTS ---
+        
+        const LinkTypeIcon = ({ url, type }) => {
+            if (!url) return <FileText size={18} className="text-slate-500" />;
+            if (url.includes('drive.google.com')) return <HardDrive size={18} className="text-blue-600" />;
+            if (url.includes('youtube.com') || url.includes('youtu.be')) return <Video size={18} className="text-red-500" />;
+            if (url.includes('zoom.us') || url.includes('meet.google')) return <Video size={18} className="text-blue-400" />;
+            if (type === 'Tugas') return <CheckCircle2 size={18} className="text-orange-500" />;
+            return <FileText size={18} className="text-slate-500" />;
+        };
+
+        const StatusBadge = ({ type, deadline }) => {
+            const isTask = type === 'Tugas' || type === 'Ujian';
+            if (!isTask) return <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">{type}</span>;
+            if (!deadline) return <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-100">{type}</span>;
+
+            const daysLeft = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
+            let colorClass = "bg-green-50 text-green-700 border-green-200";
+            let text = `${daysLeft} hari lagi`;
+
+            if (daysLeft < 0) { colorClass = "bg-red-50 text-red-700 border-red-200"; text = "Terlewat"; }
+            else if (daysLeft <= 3) { colorClass = "bg-red-50 text-red-700 border-red-200"; }
+            else if (daysLeft <= 7) { colorClass = "bg-yellow-50 text-yellow-700 border-yellow-200"; }
+
+            return (
+                <div className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${colorClass}`}>
+                    <Clock size={10} /> {text}
+                </div>
+            );
+        };
+
+        // --- QUIZ COMPONENT ---
+        const QuizModal = ({ quizData, onClose }) => {
+            const [answers, setAnswers] = useState({});
+            const [showResult, setShowResult] = useState(false);
+            const [score, setScore] = useState(0);
+
+            const handleSelect = (qIndex, optIndex) => {
+                if (showResult) return;
+                setAnswers(prev => ({...prev, [qIndex]: optIndex}));
+            };
+
+            const handleSubmit = () => {
+                let correct = 0;
+                quizData.forEach((q, idx) => {
+                    if (answers[idx] === q.answer) correct++;
+                });
+                setScore(correct);
+                setShowResult(true);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm fade-enter">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50 rounded-t-2xl">
+                            <h2 className="font-bold text-indigo-900 flex items-center gap-2">
+                                <BrainCircuit size={20}/> Kuis Kilat AI
+                            </h2>
+                            <button onClick={onClose}><X size={20} className="text-indigo-400 hover:text-indigo-700"/></button>
+                        </div>
+                        
+                        <div className="p-6 overflow-y-auto quiz-scroll space-y-8 flex-1">
+                            {quizData.map((q, qIdx) => (
+                                <div key={qIdx} className="space-y-3">
+                                    <p className="font-semibold text-slate-800 text-lg">{qIdx + 1}. {q.question}</p>
+                                    <div className="space-y-2 pl-4">
+                                        {q.options.map((opt, oIdx) => {
+                                            let btnClass = "w-full text-left p-3 rounded-xl border transition-all text-sm ";
+                                            if (showResult) {
+                                                if (oIdx === q.answer) btnClass += "bg-green-100 border-green-500 text-green-800 font-bold ";
+                                                else if (answers[qIdx] === oIdx) btnClass += "bg-red-50 border-red-300 text-red-800 ";
+                                                else btnClass += "bg-slate-50 border-slate-100 opacity-50 ";
+                                            } else {
+                                                if (answers[qIdx] === oIdx) btnClass += "bg-indigo-600 border-indigo-600 text-white shadow-md transform scale-[1.01] ";
+                                                else btnClass += "bg-white border-slate-200 hover:bg-slate-50 text-slate-600 ";
+                                            }
+
+                                            return (
+                                                <button key={oIdx} onClick={() => handleSelect(qIdx, oIdx)} className={btnClass}>
+                                                    <span className="inline-block w-6 font-bold">{String.fromCharCode(65+oIdx)}.</span> {opt}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                            {!showResult ? (
+                                <button 
+                                    onClick={handleSubmit} 
+                                    disabled={Object.keys(answers).length < quizData.length}
+                                    className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition-all"
+                                >
+                                    Cek Hasil
+                                </button>
+                            ) : (
+                                <div className="text-center animate-bounce-in">
+                                    <p className="text-slate-500 text-sm mb-1">Skor Anda:</p>
+                                    <p className="text-3xl font-black text-indigo-600">{Math.round((score / quizData.length) * 100)}</p>
+                                    <p className="text-xs text-slate-400 mt-2">({score} dari {quizData.length} benar)</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            // State
+            const [archives, setArchives] = useState([]);
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [activeTab, setActiveTab] = useState('archives');
+            const [showForm, setShowForm] = useState(false);
+            const [notification, setNotification] = useState(null);
+            const [deleteId, setDeleteId] = useState(null);
+
+            // AI State
+            const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+            const [showSettings, setShowSettings] = useState(false);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [quizData, setQuizData] = useState(null); // Array of questions
+
+            // Filter
+            const [search, setSearch] = useState('');
+            const [filterType, setFilterType] = useState('All');
+            
+            // Form
+            const initialForm = { id: null, title: '', link: '', category: '', semester: '1', type: 'Materi', deadline: '', description: '', tags: '' };
+            const [formData, setFormData] = useState(initialForm);
+
+            // Constants
+            const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
+            const TYPES = ['Materi', 'Tugas', 'Ujian', 'Referensi'];
+
+            useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                
+                // Gunakan path dengan appId untuk public data di lingkungan AI
+                // Atau path biasa jika manual config (opsional, tapi kode di bawah support keduanya karena DB_PATH simpel)
+                // Agar sesuai "Rule 1" di instruksi sistem, kita harus hati-hati. 
+                // Namun karena user meminta memperbaiki kode yang ada (Firebase Realtime Database),
+                // dan struktur user adalah 'archives', kita ikuti struktur user.
+                
+                const dbRef = ref(db, DB_PATH);
+                const unsubscribe = onValue(dbRef, (snapshot) => {
+                    const data = snapshot.val();
+                    const loadedData = [];
+                    if (data) {
+                        for (let key in data) {
+                            loadedData.push({ id: key, ...data[key] });
+                        }
+                    }
+                    loadedData.sort((a, b) => {
+                        if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
+                        return (b.createdAt || 0) - (a.createdAt || 0);
+                    });
+                    setArchives(loadedData);
+                    setLoading(false);
+                }, (error) => { 
+                    console.error("DB Error", error);
+                    setLoading(false); 
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            const showNotify = (type, msg) => {
+                setNotification({ type, message: msg });
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            // --- AI FUNCTIONS ---
+
+            const saveApiKey = (e) => {
+                e.preventDefault();
+                localStorage.setItem('gemini_api_key', geminiKey);
+                setShowSettings(false);
+                showNotify('success', 'API Key tersimpan');
+            };
+
+            const handleAutoFill = async () => {
+                if (!formData.title) return showNotify('error', 'Isi judul materi dulu!');
+                if (!geminiKey) return setShowSettings(true);
+                
+                setIsGenerating(true);
+                try {
+                    const prompt = `
+                        Sebagai asisten mahasiswa, berikan output JSON (tanpa markdown block) untuk melengkapi data arsip kuliah berdasarkan Judul: "${formData.title}".
+                        Format JSON: {
+                            "category": "Nama Mata Kuliah yang relevan (singkat)",
+                            "description": "Ringkasan akademis 1-2 kalimat tentang topik ini",
+                            "tags": "tag1, tag2, tag3"
+                        }
+                    `;
+                    const result = await callGemini(geminiKey, prompt);
+                    // Clean result if markdown block exists
+                    const cleanJson = result.replace(/```json|```/g, '').trim();
+                    const parsed = JSON.parse(cleanJson);
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        category: parsed.category || prev.category,
+                        description: parsed.description || prev.description,
+                        tags: parsed.tags || prev.tags
+                    }));
+                    showNotify('success', 'Data terisi otomatis oleh AI!');
+                } catch (error) {
+                    console.error(error);
+                    showNotify('error', 'Gagal generate AI. Cek API Key.');
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            const handleGenerateQuiz = async (item) => {
+                if (!geminiKey) return setShowSettings(true);
+                
+                // Show loading state differently? For now simple
+                const btn = document.getElementById(`btn-quiz-${item.id}`);
+                const originalText = btn ? btn.innerText : "Quiz";
+                if(btn) btn.innerText = "Loading...";
+                
+                try {
+                    const prompt = `
+                        Buatlah 3 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description || ''}".
+                        Format JSON Array Murni (Tanpa Markdown): 
+                        [
+                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } // answer adalah index jawaban benar (0-3)
+                        ]
+                    `;
+                    const result = await callGemini(geminiKey, prompt);
+                    const cleanJson = result.replace(/```json|```/g, '').trim();
+                    const quiz = JSON.parse(cleanJson);
+                    
+                    if (Array.isArray(quiz) && quiz.length > 0) {
+                        setQuizData(quiz);
+                    } else {
+                        throw new Error("Format salah");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    showNotify('error', 'Gagal membuat kuis.');
+                } finally {
+                    if(btn) btn.innerText = originalText;
+                }
+            };
+
+            // --- CRUD FUNCTIONS ---
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                // Perbaikan Button Simpan: Cek User
+                if (!user) {
+                    showNotify('error', 'Anda harus login (sedang memuat...)');
+                    return;
+                }
+
+                try {
+                    let url = formData.link;
+                    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+                    
+                    const payload = {
+                        title: formData.title,
+                        link: url,
+                        category: formData.category,
+                        semester: formData.semester,
+                        type: formData.type,
+                        deadline: formData.deadline,
+                        description: formData.description || '',
+                        tags: formData.tags || '',
+                        createdAt: serverTimestamp(),
+                        createdBy: user.uid
+                    };
+
+                    if (formData.id) {
+                        await update(ref(db, `${DB_PATH}/${formData.id}`), payload);
+                        showNotify('success', 'Arsip diperbarui');
+                    } else {
+                        await push(ref(db, DB_PATH), { ...payload, clickCount: 0 });
+                        showNotify('success', 'Arsip ditambahkan');
+                    }
+                    setFormData(initialForm);
+                    setShowForm(false);
+                } catch (err) { 
+                    showNotify('error', 'Gagal menyimpan. Cek koneksi!'); 
+                    console.error("Save Error:", err); 
+                }
+            };
+
+            const executeDelete = async () => {
+                if (!deleteId) return;
+                try {
+                    await remove(ref(db, `${DB_PATH}/${deleteId}`));
+                    showNotify('success', 'Item dihapus');
+                } catch(e) { showNotify('error', 'Gagal menghapus'); }
+                setDeleteId(null);
+            };
+
+            const openLink = (item) => {
+                window.open(item.link, '_blank');
+                if(item.id) update(ref(db, `${DB_PATH}/${item.id}`), { clickCount: (item.clickCount || 0) + 1 });
+            };
+
+            // Filtering & Stats logic
+            const filteredData = useMemo(() => {
+                return archives.filter(item => {
+                    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase()) || 
+                                      item.category.toLowerCase().includes(search.toLowerCase()) ||
+                                      (item.tags && item.tags.toLowerCase().includes(search.toLowerCase()));
+                    const matchType = filterType === 'All' || item.type === filterType;
+                    return matchSearch && matchType;
+                });
+            }, [archives, search, filterType]);
+
+            const stats = useMemo(() => {
+                const total = archives.length;
+                const tasks = archives.filter(a => a.type === 'Tugas' || a.type === 'Ujian').length;
+                const clicks = archives.reduce((a,b) => a + (b.clickCount || 0), 0);
+                return { total, tasks, clicks };
+            }, [archives]);
+
+            // UI
+            const SidebarLink = ({ id, icon: Icon, label }) => (
+                <button onClick={() => setActiveTab(id)} 
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                        activeTab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                    }`}>
+                    <Icon size={18} /> {label}
+                </button>
+            );
+
+            return (
+                <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
+                    
+                    {notification && (
+                        <div className={`fixed top-4 right-4 z-[70] px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium text-white fade-enter ${
+                            notification.type === 'success' ? 'bg-emerald-500' : 'bg-rose-500'
+                        }`}>
+                            {notification.type === 'success' ? <CheckCircle2 size={16}/> : <AlertCircle size={16}/>}
+                            {notification.message}
+                        </div>
+                    )}
+
+                    {/* Sidebar Desktop */}
+                    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 p-6 z-20">
+                        <div className="flex items-center gap-2 mb-8 px-2">
+                            <div className="bg-indigo-600 p-1.5 rounded-lg text-white"><FolderOpen size={20}/></div>
+                            <div>
+                                <span className="font-bold text-xl text-slate-800 block leading-none">StudyVault</span>
+                                <span className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1 rounded">+ Gemini AI</span>
+                            </div>
+                        </div>
+                        <nav className="flex-1 space-y-2">
+                            <SidebarLink id="dashboard" icon={LayoutDashboard} label="Ringkasan" />
+                            <SidebarLink id="archives" icon={HardDrive} label="Arsip Materi" />
+                            <SidebarLink id="calendar" icon={CalendarIcon} label="Jadwal Tugas" />
+                        </nav>
+                        <button onClick={() => setShowSettings(true)} className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 text-sm font-medium">
+                            <Settings size={18} /> API Settings
+                        </button>
+                    </aside>
+
+                    {/* Nav Mobile */}
+                    <div className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-40 pb-6">
+                        <button onClick={() => setActiveTab('dashboard')} className={activeTab==='dashboard'?'text-indigo-600':'text-slate-400'}><LayoutDashboard size={24}/></button>
+                        <button onClick={() => setActiveTab('archives')} className={activeTab==='archives'?'text-indigo-600':'text-slate-400'}><HardDrive size={24}/></button>
+                        <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="bg-indigo-600 text-white p-2 rounded-full shadow-lg -mt-8 border-4 border-slate-50"><Plus size={24}/></button>
+                        <button onClick={() => setShowSettings(true)} className="text-slate-400"><Settings size={24}/></button>
+                    </div>
+
+                    {/* Main Area */}
+                    <main className="flex-1 overflow-y-auto relative scroll-smooth p-4 md:p-8 pb-24 md:pb-8">
+                        {/* Header Mobile */}
+                        <div className="md:hidden flex justify-between items-center mb-6">
+                            <span className="font-bold text-lg text-indigo-900">StudyVault AI</span>
+                            <div className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold">{stats.total} Files</div>
+                        </div>
+
+                        {/* === DASHBOARD === */}
+                        {activeTab === 'dashboard' && (
+                            <div className="max-w-5xl mx-auto space-y-6 fade-enter">
+                                <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><div className="text-slate-400 mb-2"><HardDrive size={20}/></div><div className="text-2xl font-bold text-slate-800">{stats.total}</div><div className="text-xs text-slate-500">Total Arsip</div></div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><div className="text-orange-400 mb-2"><CheckCircle2 size={20}/></div><div className="text-2xl font-bold text-slate-800">{stats.tasks}</div><div className="text-xs text-slate-500">Tugas Aktif</div></div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><div className="text-green-500 mb-2"><TrendingUp size={20}/></div><div className="text-2xl font-bold text-slate-800">{stats.clicks}</div><div className="text-xs text-slate-500">Total Klik</div></div>
+                                </div>
+                                
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><Sparkles size={20} className="text-yellow-300"/> Fitur AI Baru!</h3>
+                                        <p className="text-indigo-100 text-sm mb-4 max-w-lg">Gunakan Gemini untuk mengisi detail materi secara otomatis atau membuat soal latihan dari catatan kuliahmu.</p>
+                                        <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors">Coba Tambah Materi</button>
+                                    </div>
+                                    <Sparkles size={100} className="absolute -right-4 -bottom-4 text-white opacity-10" />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* === ARSIP === */}
+                        {activeTab === 'archives' && (
+                            <div className="max-w-5xl mx-auto h-full flex flex-col fade-enter">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h1 className="text-2xl font-bold text-slate-900">Arsip Materi</h1>
+                                    <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium items-center gap-2 shadow-sm text-sm"><Plus size={18} /> Tambah</button>
+                                </div>
+
+                                <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-2 sticky top-0 z-10">
+                                    <div className="relative flex-1">
+                                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type="text" placeholder="Cari..." className="w-full pl-10 pr-4 py-2.5 bg-transparent text-sm focus:outline-none" value={search} onChange={e => setSearch(e.target.value)} />
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 px-2 hide-scrollbar">
+                                        {['All', ...TYPES].map(type => (
+                                            <button key={type} onClick={() => setFilterType(type)} className={`px-4 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterType === type ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{type}</button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
+                                    {loading ? <div className="col-span-full text-center py-20 text-slate-400">Memuat database...</div> : filteredData.length === 0 ? <div className="col-span-full text-center py-20 text-slate-400">Data kosong.</div> :
+                                        filteredData.map(item => (
+                                            <div key={item.id} className="group bg-white p-5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-lg transition-all relative flex flex-col h-full slide-up">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors"><LinkTypeIcon url={item.link} type={item.type}/></div>
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => { setFormData(item); setShowForm(true); }} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600"><Edit2 size={14}/></button>
+                                                        <button onClick={() => setDeleteId(item.id)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-500"><Trash2 size={14}/></button>
+                                                    </div>
+                                                </div>
+                                                <div className="mb-4 flex-1">
+                                                    <div className="flex gap-2 mb-2 flex-wrap"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">S{item.semester}</span><StatusBadge type={item.type} deadline={item.deadline} /></div>
+                                                    <h3 className="font-bold text-slate-800 leading-snug mb-1 line-clamp-2">{item.title}</h3>
+                                                    <p className="text-xs text-slate-500 truncate mb-2">{item.category}</p>
+                                                    {item.description && <p className="text-xs text-slate-500 line-clamp-2 bg-slate-50 p-2 rounded border border-slate-100 italic">{item.description}</p>}
+                                                    {item.tags && <div className="mt-2 flex flex-wrap gap-1">{item.tags.split(',').slice(0,3).map((t,i) => <span key={i} className="text-[10px] bg-slate-100 px-1.5 rounded text-slate-500">#{t.trim()}</span>)}</div>}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => openLink(item)} className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-1">Buka <ExternalLink size={12}/></button>
+                                                    <button 
+                                                        id={`btn-quiz-${item.id}`}
+                                                        onClick={() => handleGenerateQuiz(item)} 
+                                                        className="flex-1 py-2 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1"
+                                                    >
+                                                        <BrainCircuit size={12}/> Quiz Saya
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* === CALENDAR === */}
+                        {activeTab === 'calendar' && (
+                             <div className="max-w-3xl mx-auto fade-enter">
+                                <h1 className="text-2xl font-bold text-slate-900 mb-6">Jadwal Tugas</h1>
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="p-4 border-b border-slate-100 bg-slate-50/50 text-slate-700 font-bold text-sm">Deadline Mendatang</div>
+                                    <div className="divide-y divide-slate-100">
+                                        {archives.filter(a => a.deadline).length === 0 ? <div className="p-8 text-center text-slate-400 text-sm">Tidak ada deadline.</div> :
+                                            archives.filter(a => a.deadline).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).map(item => (
+                                                <div key={item.id} className="p-4 flex gap-4 items-center group hover:bg-slate-50">
+                                                    <div className="text-center min-w-[3.5rem] p-2 bg-slate-100 rounded-xl border border-slate-200">
+                                                        <div className="text-xs text-slate-500 uppercase font-bold">{new Date(item.deadline).toLocaleString('id-ID', { month: 'short' })}</div>
+                                                        <div className="text-xl font-bold text-slate-800">{new Date(item.deadline).getDate()}</div>
+                                                    </div>
+                                                    <div className="flex-1"><h4 className="font-bold text-slate-800 text-sm">{item.title}</h4><span className="text-xs text-slate-500">{item.category}</span></div>
+                                                    <button onClick={() => openLink(item)} className="p-2 text-slate-300 hover:text-indigo-600"><ExternalLink size={18}/></button>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                             </div>
+                        )}
+                    </main>
+
+                    {/* SETTINGS MODAL */}
+                    {showSettings && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
+                                <h2 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2"><Settings size={20}/> Pengaturan AI</h2>
+                                <p className="text-sm text-slate-500 mb-4">Masukkan Gemini API Key untuk mengaktifkan fitur Auto-fill dan Quiz Generator.</p>
+                                <form onSubmit={saveApiKey}>
+                                    <label className="text-xs font-bold text-slate-500 uppercase">Gemini API Key</label>
+                                    <input 
+                                            type="password" 
+                                            required 
+                                            className="w-full px-4 py-2 border rounded-xl mt-1 mb-4" 
+                                            value={geminiKey} 
+                                            onChange={e=>setGeminiKey(e.target.value)} 
+                                            placeholder="AIzaSy..." 
+                                    />
+                                    <div className="flex gap-3">
+                                        <button type="button" onClick={()=>setShowSettings(false)} className="flex-1 py-2 border rounded-xl">Batal</button>
+                                        <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold">Simpan</button>
+                                    </div>
+                                </form>
+                                <p className="text-xs text-slate-400 mt-4 text-center">Key disimpan di browser lokal (localStorage) Anda.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL FORM */}
+                    {showForm && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter">
+                            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50"><h2 className="font-bold text-slate-800">{formData.id?'Edit':'Baru'}</h2><button onClick={()=>setShowForm(false)}><X size={20}/></button></div>
+                                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Judul</label>
+                                        <div className="flex gap-2">
+                                            <input required className="w-full px-4 py-2 border rounded-xl" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} placeholder="Misal: Aljabar Linear" />
+                                            <button 
+                                                type="button" 
+                                                onClick={handleAutoFill}
+                                                disabled={isGenerating}
+                                                className="bg-purple-100 text-purple-700 px-3 rounded-xl hover:bg-purple-200 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                title="Isi otomatis deskripsi & tag dengan AI"
+                                            >
+                                                {isGenerating ? <div className="animate-spin h-4 w-4 border-2 border-purple-600 rounded-full border-t-transparent"></div> : <Sparkles size={18}/>}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div><label className="text-xs font-bold text-slate-500 uppercase">Kategori</label><input required className="w-full px-4 py-2 border rounded-xl" value={formData.category} onChange={e=>setFormData({...formData, category:e.target.value})} /></div>
+                                        <div><label className="text-xs font-bold text-slate-500 uppercase">Tipe</label><select className="w-full px-4 py-2 border rounded-xl bg-white" value={formData.type} onChange={e=>setFormData({...formData, type:e.target.value})}>{TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Deskripsi (Opsional)</label>
+                                        <textarea className="w-full px-4 py-2 border rounded-xl text-sm" rows="2" value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})} placeholder="Ringkasan materi..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase">Tags (Pisahkan koma)</label>
+                                        <input className="w-full px-4 py-2 border rounded-xl" value={formData.tags} onChange={e=>setFormData({...formData, tags:e.target.value})} placeholder="math, wajib, semester1" />
+                                    </div>
+                                    {(formData.type === 'Tugas' || formData.type === 'Ujian') && (
+                                        <div className="bg-orange-50 p-3 rounded-xl border border-orange-100"><label className="text-xs font-bold text-orange-700 uppercase">Deadline</label><input type="date" className="w-full px-4 py-2 border rounded-lg bg-white mt-1" value={formData.deadline} onChange={e=>setFormData({...formData, deadline:e.target.value})}/></div>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-4"><div><label className="text-xs font-bold text-slate-500 uppercase">Semester</label><select className="w-full px-4 py-2 border rounded-xl bg-white" value={formData.semester} onChange={e=>setFormData({...formData, semester:e.target.value})}>{SEMESTERS.map(s=><option key={s} value={s}>Semester {s}</option>)}</select></div></div>
+                                    <div><label className="text-xs font-bold text-slate-500 uppercase">URL Link</label><input required className="w-full px-4 py-2 border rounded-xl" value={formData.link} onChange={e=>setFormData({...formData, link:e.target.value})} placeholder="https://" /></div>
+                                    <button type="submit" className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg mt-4">Simpan</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* QUIZ MODAL */}
+                    {quizData && <QuizModal quizData={quizData} onClose={() => setQuizData(null)} />}
+
+                    {/* MODAL DELETE */}
+                    {deleteId && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm fade-enter">
+                            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center">
+                                <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Trash2 size={24}/></div>
+                                <h3 className="font-bold text-slate-800 mb-2">Hapus Item?</h3>
+                                <div className="flex gap-3 mt-6"><button onClick={()=>setDeleteId(null)} className="flex-1 py-2 border rounded-xl">Batal</button><button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-xl font-bold">Hapus</button></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
