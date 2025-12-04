@@ -491,7 +491,7 @@
                             </div>
                         </div>
                         <nav className="flex-1 space-y-2">
-                            <SidebarLink id="dashboard" icon={LayoutDashboard} label="Ringkasan" />
+                            <SidebarLink id="dashboard" icon={LayoutDashboard} label="Dashboard" />
                             <SidebarLink id="archives" icon={HardDrive} label="Arsip Study" />
                             <SidebarLink id="calendar" icon={CalendarIcon} label="Jadwal Tugas" />
                         </nav>
@@ -503,6 +503,7 @@
                     {/* Nav Mobile */}
                     <div className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-40 pb-6">
                         <button onClick={() => setActiveTab('dashboard')} className={activeTab==='dashboard'?'text-indigo-600':'text-slate-400'}><LayoutDashboard size={24}/></button>
+                        <button onClick={() => setActiveTab('calendar')} className={activeTab==='dashboard'?'text-indigo-600':'text-slate-400'}><CalendarIcon size={24}/></button>
                         <button onClick={() => setActiveTab('archives')} className={activeTab==='archives'?'text-indigo-600':'text-slate-400'}><HardDrive size={24}/></button>
                         <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="bg-indigo-600 text-white p-2 rounded-full shadow-lg -mt-8 border-4 border-slate-50"><Plus size={24}/></button>
                         <button onClick={() => setShowSettings(true)} className="text-slate-400"><Settings size={24}/></button>
