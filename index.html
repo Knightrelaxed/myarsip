@@ -362,10 +362,10 @@
                 
                 try {
                     const prompt = `
-                        Buatlah 3 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description || ''}".
+                        Buatlah 5 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description || ''}".
                         Format JSON Array Murni (Tanpa Markdown): 
                         [
-                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } // answer adalah index jawaban benar (0-3)
+                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } // answer adalah index jawaban benar (0-5)
                         ]
                     `;
                     const result = await callGemini(geminiKey, prompt);
@@ -583,7 +583,7 @@
                                                         onClick={() => handleGenerateQuiz(item)} 
                                                         className="flex-1 py-2 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1"
                                                     >
-                                                        <BrainCircuit size={12}/> Quiz Saya
+                                                        <BrainCircuit size={12}/> Generate Quiz
                                                     </button>
                                                 </div>
                                             </div>
