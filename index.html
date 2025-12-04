@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsip Kuliah Online + Gemini AI</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -21,17 +20,20 @@
         }
     </script>
     
-    <!-- React & Libraries -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
         "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-        "marked": "https://esm.sh/marked@12.0.0"
+        "marked": "https://esm.sh/marked@12.0.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+        "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
       }
     }
     </script>
+    
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -42,10 +44,11 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Custom Scrollbar for Quiz */
         .quiz-scroll::-webkit-scrollbar { width: 6px; }
         .quiz-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .quiz-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
@@ -61,96 +64,49 @@
             X, CheckCircle2, Clock, FileText, Video, Link as LinkIcon,
             TrendingUp, AlertCircle, Save, HardDrive, BrainCircuit, Sparkles, Settings
         } from 'lucide-react';
-        import { marked } from 'marked';
         
-        // --- FIREBASE IMPORTS ---
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+        // Import Firebase dari ImportMap (Jauh lebih stabil)
+        import { initializeApp } from 'firebase/app';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+        import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'firebase/database';
 
         // =================================================================
-        // --- CONFIG FIREBASE (DIPERBAIKI) ---
+        // --- KONFIGURASI FIREBASE ---
         // =================================================================
-        <!-- === FIREBASE MODULE FIXED === -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getDatabase, ref, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-
-        // ⭐ FIX PALING PENTING — WAJIB ADA databaseURL
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
-        authDomain: "arsip-kuliah-c031c.firebaseapp.com",
-        databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/",
-        projectId: "arsip-kuliah-c031c",
-        storageBucket: "arsip-kuliah-c031c.appspot.com",
-        messagingSenderId: "993355942952",
-        appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
-    };
         
-        
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-
-
-// === LOGIN ===
-onAuthStateChanged(auth, (user) => {
-if (!user) signInAnonymously(auth);
-});
-
-
-// === EXPORT TO WINDOW AGAR KODE BABEL BISA AKSES ===
-window._db = db;
-window._auth = auth;
-window._ref = ref;
-window._push = push;
-window._remove = remove;
-window._update = update;
-window._onValue = onValue;
-window._serverTimestamp = serverTimestamp;
-</script>
-    
-        let app, auth, db, appId;
         const DB_PATH = 'archives'; 
 
-        // Konfigurasi Manual (Fallback)
+        // Konfigurasi Manual (FIXED: Ditambahkan databaseURL)
         const manualConfig = {
             apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
             authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+            databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/", // <-- PENTING!
             projectId: "arsip-kuliah-c031c",
-            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
+            storageBucket: "arsip-kuliah-c031c.appspot.com",
             messagingSenderId: "993355942952",
-            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
-            measurementId: "G-1YG2T84XTE"
+            appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
         };
 
+        // Inisialisasi Single Instance
+        let app;
         try {
-            // Cek apakah berjalan di lingkungan AI Gemini dengan config terinjeksi
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                const config = JSON.parse(__firebase_config);
-                app = initializeApp(config);
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                console.log("Menggunakan konfigurasi AI Environment");
+                app = initializeApp(JSON.parse(__firebase_config));
+                console.log("Using Injected Config");
             } else {
-                // Gunakan konfigurasi manual jika tidak ada config terinjeksi
                 app = initializeApp(manualConfig);
-                appId = manualConfig.appId;
-                console.log("Menggunakan konfigurasi Manual/Lokal");
+                console.log("Using Manual Config");
             }
         } catch (error) {
-            console.error("Error inisialisasi Firebase:", error);
-            // Fallback terakhir jika terjadi error parsing
-            app = initializeApp(manualConfig);
+            // Jika app sudah ada (misal karena hot reload), gunakan yang sudah ada
+            // Namun karena ini single page load, error biasanya bukan duplicate
+            console.error("Firebase Init Error:", error);
         }
 
-        // Inisialisasi service setelah app terbentuk
-        auth = getAuth(app);
-        db = getDatabase(app);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        // Fungsi Helper Auth untuk menangani Token AI atau Anonymous
+        // Login Handler
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -162,15 +118,14 @@ window._serverTimestamp = serverTimestamp;
                 console.error("Auth Failed:", error);
             }
         };
-        
-        // Panggil auth saat script dimuat
         initAuth();
 
         // --- GEMINI API HELPER ---
         const callGemini = async (apiKey, prompt) => {
             if (!apiKey) throw new Error("API Key belum disetting");
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // Menggunakan model flash terbaru
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -188,9 +143,10 @@ window._serverTimestamp = serverTimestamp;
         
         const LinkTypeIcon = ({ url, type }) => {
             if (!url) return <FileText size={18} className="text-slate-500" />;
-            if (url.includes('drive.google.com')) return <HardDrive size={18} className="text-blue-600" />;
-            if (url.includes('youtube.com') || url.includes('youtu.be')) return <Video size={18} className="text-red-500" />;
-            if (url.includes('zoom.us') || url.includes('meet.google')) return <Video size={18} className="text-blue-400" />;
+            const lowerUrl = url.toLowerCase();
+            if (lowerUrl.includes('drive.google.com')) return <HardDrive size={18} className="text-blue-600" />;
+            if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return <Video size={18} className="text-red-500" />;
+            if (lowerUrl.includes('zoom.us') || lowerUrl.includes('meet.google')) return <Video size={18} className="text-blue-400" />;
             if (type === 'Tugas') return <CheckCircle2 size={18} className="text-orange-500" />;
             return <FileText size={18} className="text-slate-500" />;
         };
@@ -308,7 +264,7 @@ window._serverTimestamp = serverTimestamp;
             const [geminiKey, setGeminiKey] = useState(localStorage.getItem('gemini_api_key') || '');
             const [showSettings, setShowSettings] = useState(false);
             const [isGenerating, setIsGenerating] = useState(false);
-            const [quizData, setQuizData] = useState(null); // Array of questions
+            const [quizData, setQuizData] = useState(null); 
 
             // Filter
             const [search, setSearch] = useState('');
@@ -330,12 +286,6 @@ window._serverTimestamp = serverTimestamp;
             useEffect(() => {
                 if (!user) return;
                 
-                // Gunakan path dengan appId untuk public data di lingkungan AI
-                // Atau path biasa jika manual config (opsional, tapi kode di bawah support keduanya karena DB_PATH simpel)
-                // Agar sesuai "Rule 1" di instruksi sistem, kita harus hati-hati. 
-                // Namun karena user meminta memperbaiki kode yang ada (Firebase Realtime Database),
-                // dan struktur user adalah 'archives', kita ikuti struktur user.
-                
                 const dbRef = ref(db, DB_PATH);
                 const unsubscribe = onValue(dbRef, (snapshot) => {
                     const data = snapshot.val();
@@ -345,8 +295,11 @@ window._serverTimestamp = serverTimestamp;
                             loadedData.push({ id: key, ...data[key] });
                         }
                     }
+                    // Sort dengan safety check untuk deadline
                     loadedData.sort((a, b) => {
-                        if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
+                        const dateA = a.deadline ? new Date(a.deadline).getTime() : 0;
+                        const dateB = b.deadline ? new Date(b.deadline).getTime() : 0;
+                        if (dateA && dateB) return dateA - dateB;
                         return (b.createdAt || 0) - (a.createdAt || 0);
                     });
                     setArchives(loadedData);
@@ -381,7 +334,7 @@ window._serverTimestamp = serverTimestamp;
                     const prompt = `
                         Sebagai asisten mahasiswa, berikan output JSON (tanpa markdown block) untuk melengkapi data arsip kuliah berdasarkan Judul: "${formData.title}".
                         Format JSON: {
-                            "category": "Nama Mata Kuliah yang relevan (singkat)",
+                            "category": "Nama Mata Kuliah (singkat)",
                             "description": "Ringkasan akademis 1-2 kalimat tentang topik ini",
                             "tags": "tag1, tag2, tag3"
                         }
@@ -400,7 +353,7 @@ window._serverTimestamp = serverTimestamp;
                     showNotify('success', 'Data terisi otomatis oleh AI!');
                 } catch (error) {
                     console.error(error);
-                    showNotify('error', 'Gagal generate AI. Cek API Key.');
+                    showNotify('error', 'Gagal generate AI. Cek API Key atau koneksi.');
                 } finally {
                     setIsGenerating(false);
                 }
@@ -409,7 +362,6 @@ window._serverTimestamp = serverTimestamp;
             const handleGenerateQuiz = async (item) => {
                 if (!geminiKey) return setShowSettings(true);
                 
-                // Show loading state differently? For now simple
                 const btn = document.getElementById(`btn-quiz-${item.id}`);
                 const originalText = btn ? btn.innerText : "Quiz";
                 if(btn) btn.innerText = "Loading...";
@@ -419,8 +371,9 @@ window._serverTimestamp = serverTimestamp;
                         Buatlah 3 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description || ''}".
                         Format JSON Array Murni (Tanpa Markdown): 
                         [
-                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } // answer adalah index jawaban benar (0-3)
+                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } 
                         ]
+                        Note: answer adalah index array (0-3) jawaban yang benar.
                     `;
                     const result = await callGemini(geminiKey, prompt);
                     const cleanJson = result.replace(/```json|```/g, '').trim();
@@ -444,7 +397,6 @@ window._serverTimestamp = serverTimestamp;
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 
-                // Perbaikan Button Simpan: Cek User
                 if (!user) {
                     showNotify('error', 'Anda harus login (sedang memuat...)');
                     return;
@@ -463,15 +415,20 @@ window._serverTimestamp = serverTimestamp;
                         deadline: formData.deadline,
                         description: formData.description || '',
                         tags: formData.tags || '',
-                        createdAt: serverTimestamp(),
-                        createdBy: user.uid
+                        updatedAt: serverTimestamp(),
                     };
+                    
+                    if(!formData.id) {
+                         payload.createdAt = serverTimestamp();
+                         payload.createdBy = user.uid;
+                         payload.clickCount = 0;
+                    }
 
                     if (formData.id) {
                         await update(ref(db, `${DB_PATH}/${formData.id}`), payload);
                         showNotify('success', 'Arsip diperbarui');
                     } else {
-                        await push(ref(db, DB_PATH), { ...payload, clickCount: 0 });
+                        await push(ref(db, DB_PATH), payload);
                         showNotify('success', 'Arsip ditambahkan');
                     }
                     setFormData(initialForm);
@@ -492,6 +449,7 @@ window._serverTimestamp = serverTimestamp;
             };
 
             const openLink = (item) => {
+                if(!item.link) return;
                 window.open(item.link, '_blank');
                 if(item.id) update(ref(db, `${DB_PATH}/${item.id}`), { clickCount: (item.clickCount || 0) + 1 });
             };
@@ -499,8 +457,8 @@ window._serverTimestamp = serverTimestamp;
             // Filtering & Stats logic
             const filteredData = useMemo(() => {
                 return archives.filter(item => {
-                    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase()) || 
-                                      item.category.toLowerCase().includes(search.toLowerCase()) ||
+                    const matchSearch = (item.title||'').toLowerCase().includes(search.toLowerCase()) || 
+                                      (item.category||'').toLowerCase().includes(search.toLowerCase()) ||
                                       (item.tags && item.tags.toLowerCase().includes(search.toLowerCase()));
                     const matchType = filterType === 'All' || item.type === filterType;
                     return matchSearch && matchType;
@@ -514,7 +472,7 @@ window._serverTimestamp = serverTimestamp;
                 return { total, tasks, clicks };
             }, [archives]);
 
-            // UI
+            // UI Components
             const SidebarLink = ({ id, icon: Icon, label }) => (
                 <button onClick={() => setActiveTab(id)} 
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
