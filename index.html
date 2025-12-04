@@ -253,7 +253,7 @@
             const [archives, setArchives] = useState([]);
             const [user, setUser] = useState(null);
             const [loading, setLoading] = useState(true);
-            const [activeTab, setActiveTab] = useState('archives');
+            const [activeTab, setActiveTab] = useState('dashboard');
             const [showForm, setShowForm] = useState(false);
             const [notification, setNotification] = useState(null);
             const [deleteId, setDeleteId] = useState(null);
@@ -504,8 +504,8 @@
                     <div className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-40 pb-6">
                         <button onClick={() => setActiveTab('dashboard')} className={activeTab==='dashboard'?'text-indigo-600':'text-slate-400'}><LayoutDashboard size={24}/></button>
                         <button onClick={() => setActiveTab('calendar')} className={activeTab==='calendar'?'text-indigo-600':'text-slate-400'}><CalendarIcon size={24}/></button>
-                        <button onClick={() => setActiveTab('archives')} className={activeTab==='archives'?'text-indigo-600':'text-slate-400'}><HardDrive size={24}/></button>
                         <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="bg-indigo-600 text-white p-2 rounded-full shadow-lg -mt-8 border-4 border-slate-50"><Plus size={24}/></button>
+                        <button onClick={() => setActiveTab('archives')} className={activeTab==='archives'?'text-indigo-600':'text-slate-400'}><HardDrive size={24}/></button>
                         <button onClick={() => setShowSettings(true)} className="text-slate-400"><Settings size={24}/></button>
                     </div>
 
