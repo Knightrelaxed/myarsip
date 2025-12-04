@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arsip Kuliah Online + Gemini AI</title>
+    <title>My Study Vault</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -486,13 +486,13 @@
                         <div className="flex items-center gap-2 mb-8 px-2">
                             <div className="bg-indigo-600 p-1.5 rounded-lg text-white"><FolderOpen size={20}/></div>
                             <div>
-                                <span className="font-bold text-xl text-slate-800 block leading-none">StudyVault</span>
-                                <span className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1 rounded">+ Gemini AI</span>
+                                <span className="font-bold text-xl text-slate-750 block leading-none">My Study Vault</span>
+                                <span className="text-[10px] text-indigo-500 font-bold bg-indigo-50 px-1 rounded">Smart Artificial Intelegence</span>
                             </div>
                         </div>
                         <nav className="flex-1 space-y-2">
                             <SidebarLink id="dashboard" icon={LayoutDashboard} label="Ringkasan" />
-                            <SidebarLink id="archives" icon={HardDrive} label="Arsip Materi" />
+                            <SidebarLink id="archives" icon={HardDrive} label="Arsip Study" />
                             <SidebarLink id="calendar" icon={CalendarIcon} label="Jadwal Tugas" />
                         </nav>
                         <button onClick={() => setShowSettings(true)} className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 text-sm font-medium">
@@ -541,7 +541,7 @@
                         {activeTab === 'archives' && (
                             <div className="max-w-5xl mx-auto h-full flex flex-col fade-enter">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h1 className="text-2xl font-bold text-slate-900">Arsip Materi</h1>
+                                    <h1 className="text-2xl font-bold text-slate-900">Arsip Study</h1>
                                     <button onClick={() => { setFormData(initialForm); setShowForm(true); }} className="hidden md:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium items-center gap-2 shadow-sm text-sm"><Plus size={18} /> Tambah</button>
                                 </div>
 
