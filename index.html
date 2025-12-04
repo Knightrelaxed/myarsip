@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsip Kuliah Online + Gemini AI</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -20,20 +21,18 @@
         }
     </script>
     
+    <!-- React & Libraries -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
         "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-        "marked": "https://esm.sh/marked@12.0.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+        "marked": "https://esm.sh/marked@12.0.0"
       }
     }
     </script>
-    
+    <!-- Babel untuk compile JSX di browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -47,14 +46,13 @@
         .quiz-scroll::-webkit-scrollbar { width: 6px; }
         .quiz-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .quiz-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased overflow-hidden">
 
     <div id="root"></div>
 
+    <!-- SCRIPT UTAMA: type="text/babel" dan data-type="module" PENTING -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
@@ -65,48 +63,50 @@
             TrendingUp, AlertCircle, Save, HardDrive, BrainCircuit, Sparkles, Settings
         } from 'lucide-react';
         
-        // Import Firebase dari ImportMap (Jauh lebih stabil)
-        import { initializeApp } from 'firebase/app';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-        import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'firebase/database';
+        // --- FIREBASE IMPORTS (Versi Modular) ---
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
-        // =================================================================
         // --- KONFIGURASI FIREBASE ---
-        // =================================================================
-        
+        let app, auth, db, appId;
         const DB_PATH = 'archives'; 
 
-        // Konfigurasi Manual (FIXED: Ditambahkan databaseURL)
+        // Config Manual (Pastikan databaseURL ada)
         const manualConfig = {
             apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
             authDomain: "arsip-kuliah-c031c.firebaseapp.com",
-            databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/", // <-- PENTING!
+            databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/", // WAJIB ADA
             projectId: "arsip-kuliah-c031c",
-            storageBucket: "arsip-kuliah-c031c.appspot.com",
+            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
             messagingSenderId: "993355942952",
-            appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
+            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
+            measurementId: "G-1YG2T84XTE"
         };
 
-        // Inisialisasi Single Instance
-        let app;
         try {
+            // Cek environment AI Gemini
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                app = initializeApp(JSON.parse(__firebase_config));
-                console.log("Using Injected Config");
+                const config = JSON.parse(__firebase_config);
+                app = initializeApp(config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                console.log("Menggunakan konfigurasi AI Environment");
             } else {
+                // Gunakan konfigurasi manual
                 app = initializeApp(manualConfig);
-                console.log("Using Manual Config");
+                appId = manualConfig.appId;
+                console.log("Menggunakan konfigurasi Manual/Lokal");
             }
         } catch (error) {
-            // Jika app sudah ada (misal karena hot reload), gunakan yang sudah ada
-            // Namun karena ini single page load, error biasanya bukan duplicate
-            console.error("Firebase Init Error:", error);
+            console.error("Error inisialisasi Firebase:", error);
+            app = initializeApp(manualConfig);
         }
 
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+        // Inisialisasi Service
+        auth = getAuth(app);
+        db = getDatabase(app);
 
-        // Login Handler
+        // --- AUTH HELPER ---
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -124,8 +124,7 @@
         const callGemini = async (apiKey, prompt) => {
             if (!apiKey) throw new Error("API Key belum disetting");
             
-            // Menggunakan model flash terbaru
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -143,10 +142,9 @@
         
         const LinkTypeIcon = ({ url, type }) => {
             if (!url) return <FileText size={18} className="text-slate-500" />;
-            const lowerUrl = url.toLowerCase();
-            if (lowerUrl.includes('drive.google.com')) return <HardDrive size={18} className="text-blue-600" />;
-            if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return <Video size={18} className="text-red-500" />;
-            if (lowerUrl.includes('zoom.us') || lowerUrl.includes('meet.google')) return <Video size={18} className="text-blue-400" />;
+            if (url.includes('drive.google.com')) return <HardDrive size={18} className="text-blue-600" />;
+            if (url.includes('youtube.com') || url.includes('youtu.be')) return <Video size={18} className="text-red-500" />;
+            if (url.includes('zoom.us') || url.includes('meet.google')) return <Video size={18} className="text-blue-400" />;
             if (type === 'Tugas') return <CheckCircle2 size={18} className="text-orange-500" />;
             return <FileText size={18} className="text-slate-500" />;
         };
@@ -274,7 +272,6 @@
             const initialForm = { id: null, title: '', link: '', category: '', semester: '1', type: 'Materi', deadline: '', description: '', tags: '' };
             const [formData, setFormData] = useState(initialForm);
 
-            // Constants
             const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
             const TYPES = ['Materi', 'Tugas', 'Ujian', 'Referensi'];
 
@@ -295,11 +292,9 @@
                             loadedData.push({ id: key, ...data[key] });
                         }
                     }
-                    // Sort dengan safety check untuk deadline
+                    // Sort: Deadline terdekat, lalu CreatedAt terbaru
                     loadedData.sort((a, b) => {
-                        const dateA = a.deadline ? new Date(a.deadline).getTime() : 0;
-                        const dateB = b.deadline ? new Date(b.deadline).getTime() : 0;
-                        if (dateA && dateB) return dateA - dateB;
+                        if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
                         return (b.createdAt || 0) - (a.createdAt || 0);
                     });
                     setArchives(loadedData);
@@ -334,13 +329,12 @@
                     const prompt = `
                         Sebagai asisten mahasiswa, berikan output JSON (tanpa markdown block) untuk melengkapi data arsip kuliah berdasarkan Judul: "${formData.title}".
                         Format JSON: {
-                            "category": "Nama Mata Kuliah (singkat)",
+                            "category": "Nama Mata Kuliah yang relevan (singkat)",
                             "description": "Ringkasan akademis 1-2 kalimat tentang topik ini",
                             "tags": "tag1, tag2, tag3"
                         }
                     `;
                     const result = await callGemini(geminiKey, prompt);
-                    // Clean result if markdown block exists
                     const cleanJson = result.replace(/```json|```/g, '').trim();
                     const parsed = JSON.parse(cleanJson);
                     
@@ -353,7 +347,7 @@
                     showNotify('success', 'Data terisi otomatis oleh AI!');
                 } catch (error) {
                     console.error(error);
-                    showNotify('error', 'Gagal generate AI. Cek API Key atau koneksi.');
+                    showNotify('error', 'Gagal generate AI. Cek API Key.');
                 } finally {
                     setIsGenerating(false);
                 }
@@ -371,9 +365,8 @@
                         Buatlah 3 soal kuis pilihan ganda (Multiple Choice) bahasa Indonesia yang edukatif berdasarkan topik kuliah: "${item.title}" dan deskripsi: "${item.description || ''}".
                         Format JSON Array Murni (Tanpa Markdown): 
                         [
-                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } 
+                            { "question": "Pertanyaan?", "options": ["A", "B", "C", "D"], "answer": 0 } // answer adalah index jawaban benar (0-3)
                         ]
-                        Note: answer adalah index array (0-3) jawaban yang benar.
                     `;
                     const result = await callGemini(geminiKey, prompt);
                     const cleanJson = result.replace(/```json|```/g, '').trim();
@@ -415,20 +408,15 @@
                         deadline: formData.deadline,
                         description: formData.description || '',
                         tags: formData.tags || '',
-                        updatedAt: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        createdBy: user.uid
                     };
-                    
-                    if(!formData.id) {
-                         payload.createdAt = serverTimestamp();
-                         payload.createdBy = user.uid;
-                         payload.clickCount = 0;
-                    }
 
                     if (formData.id) {
                         await update(ref(db, `${DB_PATH}/${formData.id}`), payload);
                         showNotify('success', 'Arsip diperbarui');
                     } else {
-                        await push(ref(db, DB_PATH), payload);
+                        await push(ref(db, DB_PATH), { ...payload, clickCount: 0 });
                         showNotify('success', 'Arsip ditambahkan');
                     }
                     setFormData(initialForm);
@@ -449,7 +437,6 @@
             };
 
             const openLink = (item) => {
-                if(!item.link) return;
                 window.open(item.link, '_blank');
                 if(item.id) update(ref(db, `${DB_PATH}/${item.id}`), { clickCount: (item.clickCount || 0) + 1 });
             };
@@ -457,8 +444,8 @@
             // Filtering & Stats logic
             const filteredData = useMemo(() => {
                 return archives.filter(item => {
-                    const matchSearch = (item.title||'').toLowerCase().includes(search.toLowerCase()) || 
-                                      (item.category||'').toLowerCase().includes(search.toLowerCase()) ||
+                    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase()) || 
+                                      item.category.toLowerCase().includes(search.toLowerCase()) ||
                                       (item.tags && item.tags.toLowerCase().includes(search.toLowerCase()));
                     const matchType = filterType === 'All' || item.type === filterType;
                     return matchSearch && matchType;
