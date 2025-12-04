@@ -65,38 +65,66 @@
         
         // --- FIREBASE IMPORTS ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
         import { getDatabase, ref, push, onValue, remove, update, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
         // =================================================================
-        // --- CONFIG FIREBASE ---
+        // --- CONFIG FIREBASE (DIPERBAIKI) ---
         // =================================================================
-        // 2. Logika Deteksi Lingkungan (AI Preview vs GitHub Pages)
+        
+        let app, auth, db, appId;
+        let isAIEnv = false; // Flag untuk mendeteksi environment
+
+        // Konfigurasi Manual (Fallback)
+        const manualConfig = {
+            apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+            authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+            projectId: "arsip-kuliah-c031c",
+            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
+            messagingSenderId: "993355942952",
+            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
+            measurementId: "G-1YG2T84XTE"
+        };
+
         try {
+            // Cek apakah berjalan di lingkungan AI Gemini dengan config terinjeksi
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                // Environment AI Gemini (Jangan diubah)
                 const config = JSON.parse(__firebase_config);
                 app = initializeApp(config);
                 appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                isAIEnv = true;
                 console.log("Menggunakan konfigurasi AI Environment");
             } else {
-                // Environment GitHub Pages / Lokal (ISI BAGIAN INI)
-                const manualConfig = {
-                    apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
-                    authDomain: "arsip-kuliah-c031c.firebaseapp.com",
-                    projectId: "arsip-kuliah-c031c",
-                    storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
-                    messagingSenderId: "993355942952",
-                    appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
-                    measurementId: "G-1YG2T84XTE"
-                                    };
-        
-            
+                // Gunakan konfigurasi manual jika tidak ada config terinjeksi
+                app = initializeApp(manualConfig);
+                appId = manualConfig.appId;
+                console.log("Menggunakan konfigurasi Manual/Lokal");
+            }
+        } catch (error) {
+            console.error("Error inisialisasi Firebase:", error);
+            // Fallback terakhir jika terjadi error parsing
+            app = initializeApp(manualConfig);
+        }
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app); 
-        const DB_PATH = 'archives'; 
+        // Inisialisasi service setelah app terbentuk
+        auth = getAuth(app);
+        db = getDatabase(app);
+
+        // Fungsi Helper Auth untuk menangani Token AI atau Anonymous
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Failed:", error);
+            }
+        };
+        
+        // Panggil auth saat script dimuat
+        initAuth();
 
         // --- GEMINI API HELPER ---
         const callGemini = async (apiKey, prompt) => {
@@ -255,13 +283,26 @@
             const TYPES = ['Materi', 'Tugas', 'Ujian', 'Referensi'];
 
             useEffect(() => {
-                signInAnonymously(auth).catch(err => console.error("Auth Error:", err));
-                return onAuthStateChanged(auth, setUser);
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
             }, []);
+
+            // Helper untuk mendapatkan path database yang benar berdasarkan environment
+            const getDbPath = () => {
+                if (isAIEnv && user) {
+                    // Gunakan path user-specific agar sesuai aturan permission di AI environment
+                    return `artifacts/${appId}/users/${user.uid}/archives`;
+                }
+                // Gunakan path root standar untuk konfigurasi manual
+                return 'archives';
+            };
 
             useEffect(() => {
                 if (!user) return;
-                const dbRef = ref(db, DB_PATH);
+                
+                const dbPath = getDbPath();
+                const dbRef = ref(db, dbPath);
+                
                 const unsubscribe = onValue(dbRef, (snapshot) => {
                     const data = snapshot.val();
                     const loadedData = [];
@@ -276,7 +317,15 @@
                     });
                     setArchives(loadedData);
                     setLoading(false);
-                }, (error) => { setLoading(false); });
+                }, (error) => { 
+                    console.error("DB Error", error);
+                    // Jangan set loading false jika permission denied agar user tahu ada masalah, 
+                    // atau handle error UI secara spesifik. Di sini kita biarkan loading hilang tapi list kosong/error.
+                    setLoading(false); 
+                    if(error.code === 'PERMISSION_DENIED') {
+                        showNotify('error', 'Akses Ditolak: Cek konfigurasi database.');
+                    }
+                });
                 return () => unsubscribe();
             }, [user]);
 
@@ -332,8 +381,9 @@
                 if (!geminiKey) return setShowSettings(true);
                 
                 // Show loading state differently? For now simple
-                const originalText = document.getElementById(`btn-quiz-${item.id}`).innerText;
-                document.getElementById(`btn-quiz-${item.id}`).innerText = "Loading...";
+                const btn = document.getElementById(`btn-quiz-${item.id}`);
+                const originalText = btn ? btn.innerText : "Quiz";
+                if(btn) btn.innerText = "Loading...";
                 
                 try {
                     const prompt = `
@@ -356,7 +406,7 @@
                     console.error(error);
                     showNotify('error', 'Gagal membuat kuis.');
                 } finally {
-                    document.getElementById(`btn-quiz-${item.id}`).innerText = originalText;
+                    if(btn) btn.innerText = originalText;
                 }
             };
 
@@ -364,7 +414,12 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!user) return;
+                
+                if (!user) {
+                    showNotify('error', 'Anda harus login (sedang memuat...)');
+                    return;
+                }
+
                 try {
                     let url = formData.link;
                     if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -382,25 +437,28 @@
                         createdBy: user.uid
                     };
 
+                    const dbPath = getDbPath();
+
                     if (formData.id) {
-                        await update(ref(db, `${DB_PATH}/${formData.id}`), payload);
+                        await update(ref(db, `${dbPath}/${formData.id}`), payload);
                         showNotify('success', 'Arsip diperbarui');
                     } else {
-                        await push(ref(db, DB_PATH), { ...payload, clickCount: 0 });
+                        await push(ref(db, dbPath), { ...payload, clickCount: 0 });
                         showNotify('success', 'Arsip ditambahkan');
                     }
                     setFormData(initialForm);
                     setShowForm(false);
                 } catch (err) { 
-                    showNotify('error', 'Gagal menyimpan. Cek databaseURL di config!'); 
-                    console.error(err); 
+                    showNotify('error', 'Gagal menyimpan. Cek permission!'); 
+                    console.error("Save Error:", err); 
                 }
             };
 
             const executeDelete = async () => {
                 if (!deleteId) return;
                 try {
-                    await remove(ref(db, `${DB_PATH}/${deleteId}`));
+                    const dbPath = getDbPath();
+                    await remove(ref(db, `${dbPath}/${deleteId}`));
                     showNotify('success', 'Item dihapus');
                 } catch(e) { showNotify('error', 'Gagal menghapus'); }
                 setDeleteId(null);
@@ -408,7 +466,10 @@
 
             const openLink = (item) => {
                 window.open(item.link, '_blank');
-                if(item.id) update(ref(db, `${DB_PATH}/${item.id}`), { clickCount: (item.clickCount || 0) + 1 });
+                if(item.id) {
+                    const dbPath = getDbPath();
+                    update(ref(db, `${dbPath}/${item.id}`), { clickCount: (item.clickCount || 0) + 1 });
+                }
             };
 
             // Filtering & Stats logic
@@ -596,12 +657,12 @@
                                 <form onSubmit={saveApiKey}>
                                     <label className="text-xs font-bold text-slate-500 uppercase">Gemini API Key</label>
                                     <input 
-                                        type="password" 
-                                        required 
-                                        className="w-full px-4 py-2 border rounded-xl mt-1 mb-4" 
-                                        value={geminiKey} 
-                                        onChange={e=>setGeminiKey(e.target.value)} 
-                                        placeholder="AIzaSy..." 
+                                            type="password" 
+                                            required 
+                                            className="w-full px-4 py-2 border rounded-xl mt-1 mb-4" 
+                                            value={geminiKey} 
+                                            onChange={e=>setGeminiKey(e.target.value)} 
+                                            placeholder="AIzaSy..." 
                                     />
                                     <div className="flex gap-3">
                                         <button type="button" onClick={()=>setShowSettings(false)} className="flex-1 py-2 border rounded-xl">Batal</button>
