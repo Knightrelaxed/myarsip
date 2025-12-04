@@ -71,7 +71,45 @@
         // =================================================================
         // --- CONFIG FIREBASE (DIPERBAIKI) ---
         // =================================================================
-        
+        <!-- === FIREBASE MODULE FIXED === -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getDatabase, ref, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // ⭐ FIX PALING PENTING — WAJIB ADA databaseURL
+const firebaseConfig = {
+    apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+    authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+    databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/", // FIX 🔥
+    projectId: "arsip-kuliah-c031c",
+    storageBucket: "arsip-kuliah-c031c.appspot.com",
+    messagingSenderId: "993355942952",
+    appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
+                        };
+
+        const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+
+// === LOGIN ===
+onAuthStateChanged(auth, (user) => {
+if (!user) signInAnonymously(auth);
+});
+
+
+// === EXPORT TO WINDOW AGAR KODE BABEL BISA AKSES ===
+window._db = db;
+window._auth = auth;
+window._ref = ref;
+window._push = push;
+window._remove = remove;
+window._update = update;
+window._onValue = onValue;
+window._serverTimestamp = serverTimestamp;
+</script>
+    
         let app, auth, db, appId;
         const DB_PATH = 'archives'; 
 
