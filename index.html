@@ -4,22 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arsip Kuliah Online + Gemini AI</title>
-
-    <!-- React -->
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-<!-- Lucide Icons -->
-<script src="https://unpkg.com/lucide@latest"></script>
-
-<!-- Marked -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<!-- Firebase v11 -->
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"></script>
-
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -93,47 +77,42 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getDatabase, ref, push, remove, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-       <script type="text/babel" data-presets="env,react">
+        // ⭐ FIX PALING PENTING — WAJIB ADA databaseURL
 
-// =====================
-// CONFIG FIREBASE FIXED
-// =====================
-const firebaseConfig = {
-    apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
-    authDomain: "arsip-kuliah-c031c.firebaseapp.com",
-    projectId: "arsip-kuliah-c031c",
-    storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
-    messagingSenderId: "993355942952",
-    appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
-    measurementId: "G-1YG2T84XTE",
-    databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+        authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+        databaseURL: "https://arsip-kuliah-c031c-default-rtdb.firebaseio.com/",
+        projectId: "arsip-kuliah-c031c",
+        storageBucket: "arsip-kuliah-c031c.appspot.com",
+        messagingSenderId: "993355942952",
+        appId: "1:993355942952:web:c489a0e31654cca1a6f91d"
+    };
+        
+        
 
-// Init Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.getAuth(app);
-const db = firebase.getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
 
-// Login anon
-firebase.signInAnonymously(auth);
 
-// ===========================
-// SELURUH CODE REACT ANDA
-// TIDAK BOLEH ADA "import"
-// ===========================
+// === LOGIN ===
+onAuthStateChanged(auth, (user) => {
+if (!user) signInAnonymously(auth);
+});
 
-// contoh:
-function App() {
-    return (
-        <div>Hello Firebase Fix!</div>
-    );
-}
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-
+// === EXPORT TO WINDOW AGAR KODE BABEL BISA AKSES ===
+window._db = db;
+window._auth = auth;
+window._ref = ref;
+window._push = push;
+window._remove = remove;
+window._update = update;
+window._onValue = onValue;
+window._serverTimestamp = serverTimestamp;
 </script>
-
+    
         let app, auth, db, appId;
         const DB_PATH = 'archives'; 
 
