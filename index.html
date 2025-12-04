@@ -72,19 +72,15 @@
         import { getFirestore, collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, serverTimestamp, increment } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // --- CONFIG FIREBASE ---
-        let firebaseConfig;
-        let appId = 'default-app-id';
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            } else { throw new Error("No config"); }
-        } catch (e) { console.warn("Config missing/local mode"); }
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const COLLECTION_NAME = 'study_archives_pro_v1';
+       const firebaseConfig = {
+            apiKey: "AIzaSyC9iYH2zFNbl_ysW37cOsHkDxP7aF7H5VU",
+            authDomain: "arsip-kuliah-c031c.firebaseapp.com",
+            projectId: "arsip-kuliah-c031c",
+            storageBucket: "arsip-kuliah-c031c.firebasestorage.app",
+            messagingSenderId: "993355942952",
+            appId: "1:993355942952:web:c489a0e31654cca1a6f91d",
+            measurementId: "G-1YG2T84XTE"
+        };
 
         // --- CONSTANTS ---
         const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
